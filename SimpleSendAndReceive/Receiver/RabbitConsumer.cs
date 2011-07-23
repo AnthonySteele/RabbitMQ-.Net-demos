@@ -26,7 +26,7 @@ namespace Receiver
 
         public void ConsumeMessages()
         {
-            Console.WriteLine("Waiting for messages");
+            Console.WriteLine("Waiting for messages. Press 'q' to quit");
 
             QueueingBasicConsumer consumer = MakeConsumer();
 
@@ -35,7 +35,7 @@ namespace Receiver
             {
                 ReadAMessage(consumer);
 
-                done = TestDone();
+                done = this.WasQuitKeyPressed();
             }
 
             connection.Close();
@@ -50,7 +50,7 @@ namespace Receiver
             return consumer;
         }
 
-        private bool TestDone()
+        private bool WasQuitKeyPressed()
         {
             if (Console.KeyAvailable)
             {
