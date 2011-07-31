@@ -7,10 +7,16 @@
 
     using RabbitMQ.Client;
 
+    /// <summary>
+    /// send messages to an exchange, 
+    /// similar to the pub-sub example at http://www.rabbitmq.com/tutorials/tutorial-three-java.html
+    /// </summary>
     class RabbitProducer
     {
         private IConnection connection;
         private IModel channel;
+
+        private const string ExchangeName = "PubSubTestExchange";
 
         public void Connect()
         {
@@ -21,8 +27,7 @@
 
             connection = factory.CreateConnection();
             channel = connection.CreateModel();
-
-            channel.QueueDeclare(ConnectionConstants.PubSubQueueName, false, false, false, null);
+            channel.ExchangeDeclare(ExchangeName, "fanout");
         }
 
         public void Disconnect()
@@ -85,7 +90,7 @@
         private void SendMessage<T>(T message)
         {
             byte[] messageBody = message.ToByteArray();
-            channel.BasicPublish(string.Empty, ConnectionConstants.PubSubQueueName, null, messageBody);
+            channel.BasicPublish(ExchangeName, string.Empty, null, messageBody);
         }
     }
 }

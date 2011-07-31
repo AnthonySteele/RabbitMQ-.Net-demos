@@ -6,10 +6,18 @@ namespace Receiver
     using RabbitMQ.Client;
     using RabbitMQ.Client.Events;
 
+    /// <summary>
+    /// attach a queue to an exchange, 
+    /// similar to the pub-sub example at http://www.rabbitmq.com/tutorials/tutorial-three-java.html
+    /// </summary>
     internal class RabbitConsumer
     {
         private IConnection connection;
         private IModel channel;
+
+        private const string ExchangeName = "PubSubTestExchange";
+
+        private string queueName;
 
         public void Connect()
         {
@@ -20,8 +28,11 @@ namespace Receiver
             
             connection = factory.CreateConnection();
             channel = connection.CreateModel();
+            channel.ExchangeDeclare(ExchangeName, "fanout");
 
-            channel.QueueDeclare(ConnectionConstants.PubSubQueueName, false, false, false, null);
+            // queue name is generated
+            queueName = channel.QueueDeclare();
+            channel.QueueBind(queueName, ExchangeName, string.Empty);
         }
 
         public void ConsumeMessages()
@@ -46,7 +57,7 @@ namespace Receiver
         private QueueingBasicConsumer MakeConsumer()
         {
             QueueingBasicConsumer consumer = new QueueingBasicConsumer(channel);
-            channel.BasicConsume(ConnectionConstants.PubSubQueueName, true, consumer);
+            channel.BasicConsume(queueName, true, consumer);
             return consumer;
         }
 
@@ -67,15 +78,15 @@ namespace Receiver
 
         private static void ReadAMessage(QueueingBasicConsumer consumer)
         {
-            BasicDeliverEventArgs messageInEnvelope = DequeueMessage(consumer);
-            if (messageInEnvelope == null)
+            BasicDeliverEventArgs delivery = DequeueMessage(consumer);
+            if (delivery == null)
             {
                 return;
             }
 
             try
             {
-                object message = SerializationHelper.FromByteArray(messageInEnvelope.Body);
+                object message = SerializationHelper.FromByteArray(delivery.Body);
                 Console.WriteLine("Received {0} : {1}", message.GetType().Name, message);
             }
             catch (Exception ex)
