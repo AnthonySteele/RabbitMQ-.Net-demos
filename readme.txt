@@ -34,8 +34,10 @@ Every receiver's queue gets a copy of every message sent after the queue is set 
 
 Notes: 
 
-- This kind of exchange is called a "fanout" exchange.
+- The code is very similar to the first example. The part that has changed is just the RabbitMQ setup - sending and receiving and other concerns are unchanged.
 
 - There are ways for exchanges to filter messages so that some messages are sent to some queues and not others based on message metadata (the "routing key"), but that is outside the scope of this example.
 
 - To avoid name clashes, the subscriber does not pick a name for the queue that it requests. Instead a unique name is generated and returned from QueueDeclare().
+
+- This kind of exchange is called a "fanout" exchange. 
