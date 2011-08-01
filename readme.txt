@@ -28,16 +28,20 @@ PubSub
 
 This pair of small C# programs demonstrates use of RabbitMQ in a publish and subscribe manner, in which each message is sent to all current subscribers. This is similar to the Java example at http://www.rabbitmq.com/tutorials/tutorial-three-java.html
 
-In order to use this, you need one new concept: An Exchange.  The sender sends messages to the exchange, not directly to a queue. The exchange has zero or more queues, one for each subscriber. The exchange copies messages received onto these queues.
+In order to use this, you need one new concept: An Exchange.  The sender sends messages to the exchange, not directly to a queue. The exchange copies received messages onto all attached queues. The exchange has zero or more queues, one for each subscriber.  
 
-Every receiver's queue gets a copy of every message sent after the queue is set up. If there are no receivers at all, messages are discarded by the exchange, not retained on any queues. 
+The exchange does not buffer messages - that is what queues do. If there are no queues attached when a message is received by the exchange, the message is discarded. This is a feature of broadcast messaging - you don't need to now how many listeners there are, or even if there are any. 
+
+The subscriber's queue is temporary, it is created for the subscriber, and is deleted when the subscriber disconnects. 
 
 Notes: 
 
-- The code is very similar to the first example. The part that has changed is just the RabbitMQ setup - sending and receiving and other concerns are unchanged.
+- The code is very similar to the first example. The part that has changed is just the RabbitMQ setup - sending and receiving messages, and other concerns are unchanged.
+
+- To avoid name clashes, the subscriber does not pick a name for the queue that it requests. Instead a unique name is generated and returned from QueueDeclare(). It's not a GUID, but it's just as unreadable.
+
+- The kind of exchange used in this example is a "fanout" exchange. 
+
+- The "Simple Send And Receive" example does in fact use an exchange, a default one to which the named queue is attached.  
 
 - There are ways for exchanges to filter messages so that some messages are sent to some queues and not others based on message metadata (the "routing key"), but that is outside the scope of this example.
-
-- To avoid name clashes, the subscriber does not pick a name for the queue that it requests. Instead a unique name is generated and returned from QueueDeclare().
-
-- This kind of exchange is called a "fanout" exchange. 
