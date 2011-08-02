@@ -38,7 +38,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConnectionConstants.cs" />
     <Compile Include="GuidMessage.cs" />
     <Compile Include="SerializationHelper.cs" />
     <Compile Include="SimpleMessage.cs" />

@@ -1,7 +1,7 @@
-﻿using System;
-
-namespace Messages
+﻿namespace Messages
 {
+    using System;
+    
     [Serializable]
     public class SimpleMessage
     {

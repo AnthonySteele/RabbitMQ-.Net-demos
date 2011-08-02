@@ -26,7 +26,7 @@ namespace Receiver
 
         public void ConsumeMessages()
         {
-            Console.WriteLine("Waiting for messages. Press 'q' to quit");
+            WriteStartMessage();
 
             QueueingBasicConsumer consumer = MakeConsumer();
 
@@ -42,6 +42,14 @@ namespace Receiver
             connection.Dispose();
             connection = null;
         }
+
+        private static void WriteStartMessage()
+        {
+            string startMessage = string.Format("Waiting for messages on {0}/{1}. Press 'q' to quit",
+                ConnectionConstants.HostName, ConnectionConstants.QueueName);
+            Console.WriteLine(startMessage);
+        }
+
 
         private QueueingBasicConsumer MakeConsumer()
         {

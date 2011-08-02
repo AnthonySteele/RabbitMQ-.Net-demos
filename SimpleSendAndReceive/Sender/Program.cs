@@ -1,7 +1,4 @@
-﻿using Messages;
-using System.Threading;
-
-namespace Sender
+﻿namespace Sender
 {
     using System;
 

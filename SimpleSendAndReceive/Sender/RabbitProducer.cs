@@ -38,12 +38,16 @@
             connection = null;
         }
 
+        private const int MessageCount = 10;
+
         public void SendMessages()
-        {  
+        {
+            WriteStartMessage();
+
             Random random = new Random();
             int senderId = random.Next(99999);
 
-            for (int index = 1; index < 10; index++)
+            for (int index = 1; index <= MessageCount; index++)
             {
                 if (random.Next(2) == 1)
                 {
@@ -56,6 +60,13 @@
 
                 Thread.Sleep(500);
             }
+        }
+
+        private static void WriteStartMessage()
+        {
+            string startMessage = string.Format("Sending {0} messages to {1}/{2}", 
+                MessageCount, ConnectionConstants.HostName, ConnectionConstants.QueueName);
+            Console.WriteLine(startMessage);
         }
 
         private void SendGuidMessage(int senderId, int index)
