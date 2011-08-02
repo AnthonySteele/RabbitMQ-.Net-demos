@@ -45,3 +45,6 @@ Notes:
 - In the pub-sub example, the subscriber does not pick a name for its queue - that could result in name clashes. Instead a unique name is generated and returned from QueueDeclare(). It's not a GUID, but it's just as unreadable.
 
 - There are ways for exchanges to filter messages so that some messages are sent to some queues and not others based on message metadata (the "routing key"), but that is outside the scope of this example.
+
+==============
+Anthony Steele
