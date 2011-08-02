@@ -36,12 +36,12 @@ The subscriber's queue is temporary, it is created for the subscriber, and is de
 
 Notes: 
 
-- The code is very similar to the first example. The part that has changed is just the RabbitMQ setup - sending and receiving messages, and other concerns are unchanged.
-
-- To avoid name clashes, the subscriber does not pick a name for the queue that it requests. Instead a unique name is generated and returned from QueueDeclare(). It's not a GUID, but it's just as unreadable.
+- The code is very similar to the first example. The part that has changed is just the RabbitMQ setup - sending and receiving messages, program flow, output and reading the keyboard are unchanged.
 
 - The kind of exchange used in this example is a "fanout" exchange. 
 
 - The "Simple Send And Receive" example does in fact use an exchange, a default one to which the named queue is attached.  
+
+- In the pub-sub example, the subscriber does not pick a name for its queue - that could result in name clashes. Instead a unique name is generated and returned from QueueDeclare(). It's not a GUID, but it's just as unreadable.
 
 - There are ways for exchanges to filter messages so that some messages are sent to some queues and not others based on message metadata (the "routing key"), but that is outside the scope of this example.
