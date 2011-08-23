@@ -82,8 +82,8 @@
                     Content = String.Format("This is Guid message #{0} message from {1}", index, senderId)
                 };
 
-            Console.WriteLine("Sent Guid message #{0} from sender {1}", index, senderId);
             SendMessage(message);
+            Console.WriteLine("Sent Guid message #{0} from sender {1}", index, senderId);
         }
 
         private void SendSimpleMessage(int senderId, int index)
@@ -94,8 +94,8 @@
                     Text = "This is simple message from " + senderId
                 };
 
-            Console.WriteLine("Sent simple message #{0} from sender {1}", index, senderId);
             SendMessage(message);
+            Console.WriteLine("Sent simple message #{0} from sender {1}", index, senderId);
         }
 
         private void SendMessage<T>(T message)

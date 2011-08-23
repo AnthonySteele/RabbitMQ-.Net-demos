@@ -26,9 +26,8 @@ namespace Receiver
 
         public void ConsumeMessages()
         {
-            WriteStartMessage();
-
             QueueingBasicConsumer consumer = MakeConsumer();
+            WriteStartMessage();
 
             bool done = false;
             while (! done)
