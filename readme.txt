@@ -56,7 +56,7 @@ All senders send messages to the same queue, but each sender declares a queue fo
 You can start multiple senders - the server will handle messages from them all. You can start multiple servers - messages will be processed by them in a round-robin manner.
 
 Notes:
-- In this example, the sender sends one message, waits for the reply, then sends the next message. since this is a message queue, more complex arrangements are possible, where the sender sends multiple messages, and matches replies to outstanding requests as they arrive.
+- In this example, the sender sends one message, waits for the reply, then sends the next message. since this is a message queue, there is no need to wait. Using threads, the sender could sends multiple messages, and match replies to outstanding requests as they arrive.
 
 ==============
 Anthony Steele
