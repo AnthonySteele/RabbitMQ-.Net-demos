@@ -87,12 +87,12 @@ namespace Server
                 {
                     Console.WriteLine("Received message: {0}", request);
 
-                    ReplyMessage response = MakeResponse(request);
+                    ReplyMessage replyMessage = this.MakeReply(request);
 
                     IBasicProperties requestProperties = messageInEnvelope.BasicProperties;
                     IBasicProperties responseProperties = consumer.Model.CreateBasicProperties();
                     responseProperties.CorrelationId = requestProperties.CorrelationId;
-                    this.SendResponse(requestProperties.ReplyTo, responseProperties, response);
+                    this.SendReply(requestProperties.ReplyTo, responseProperties, replyMessage);
                     this.channel.BasicAck(messageInEnvelope.DeliveryTag, false);
  
                     Console.WriteLine("sent reply to: {0}", request);
@@ -104,18 +104,18 @@ namespace Server
             }
         }
 
-        private ReplyMessage MakeResponse(RequestMessage message)
+        private ReplyMessage MakeReply(RequestMessage message)
         {
             return new ReplyMessage
             {
                 Id = message.Id,
-                Answer = "Answer to " + message.Request
+                Reply = "Reply to " + message.Request
             };
         }
 
-        private void SendResponse(string responseQueueName, IBasicProperties responseProperties, ReplyMessage response)
+        private void SendReply(string replyQueueName, IBasicProperties responseProperties, ReplyMessage response)
         {
-            this.channel.BasicPublish(string.Empty, responseQueueName, responseProperties, response.ToByteArray());
+            this.channel.BasicPublish(string.Empty, replyQueueName, responseProperties, response.ToByteArray());
         }
 
         private static BasicDeliverEventArgs DequeueMessage(QueueingBasicConsumer consumer)

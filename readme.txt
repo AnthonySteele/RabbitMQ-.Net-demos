@@ -8,6 +8,8 @@ These demos do not address reliability. Exception handling is rudimentary and no
 
 No abstraction of common RabbitMQ-handling code into libraries or wrappers has been done. Not because this is a bad idea, but because it would unnecessarily complicate the sample. It is a good idea in a more complex program, but any approach taken in these simple samples will likely be a false start for your needs.
 
+In all samples, once they have been compiled, the batch files "send.bat" and "receive.bat" can be used to launch the programs.
+
 Simple Send And Receive
 =======================
 
@@ -51,12 +53,12 @@ RPC
 
 This pair of small C# programs demonstrates use of RabbitMQ in a Remote Procedure Call manner, in which a message sender waits for a reply to each message that it sends to a server. This is similar to the Java example at http://www.rabbitmq.com/tutorials/tutorial-six-java.html
 
-All senders send messages to the same queue, but each sender declares a queue for itself, on which it replies will be returned to it. This queue name is sent in each message's metadata.
+All senders send messages to the same queue, but each sender declares a queue for itself, on which replies will be returned to it. This reply queue name is sent in each message's metadata.
 
 You can start multiple senders - the server will handle messages from them all. You can start multiple servers - messages will be processed by them in a round-robin manner.
 
 Notes:
-- In this example, the sender sends one message, waits for the reply, then sends the next message. since this is a message queue, there is no need to wait. Using threads, the sender could sends multiple messages, and match replies to outstanding requests as they arrive.
+- In this example, the sender sends one message, waits for the reply, then sends the next message. Since this is a message queue, there is no need to wait for a reply before sending the next message. The sender could send multiple messages, and process replies on a different thread. You can match replies to outstanding requests using the correlation id in the message metadata. However the needed threads, message tracking list or dictionary and locking would complicate this sample.
 
 ==============
 Anthony Steele
