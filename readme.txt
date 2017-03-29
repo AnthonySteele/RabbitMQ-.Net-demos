@@ -49,7 +49,7 @@ Notes:
 - There are ways for exchanges to filter messages so that some messages are sent to some queues and not others based on message metadata (the "routing key"), but that is outside the scope of this example.
 
 RPC
-======
+===
 
 This pair of small C# programs demonstrates use of RabbitMQ in a Remote Procedure Call manner, in which a message sender waits for a reply to each message that it sends to a server. This is similar to the Java example at http://www.rabbitmq.com/tutorials/tutorial-six-java.html
 
