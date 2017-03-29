@@ -1,3 +1,5 @@
+using System.Threading;
+
 namespace Server
 {
     using System;
@@ -8,8 +10,9 @@ namespace Server
 
     internal class QueuedServer
     {
-        private IConnection connection;
-        private IModel channel;
+        private IConnection _connection;
+        private IModel _channel;
+        private EventingBasicConsumer _consumer;
 
         public void Connect()
         {
@@ -18,42 +21,67 @@ namespace Server
                 HostName = ConnectionConstants.HostName
             }; 
             
-            connection = factory.CreateConnection();
-            channel = connection.CreateModel();
+            _connection = factory.CreateConnection();
+            _channel = _connection.CreateModel();
 
-            channel.QueueDeclare(ConnectionConstants.QueueName, false, false, false, null);
+            _channel.QueueDeclare(ConnectionConstants.QueueName, false, false, false, null);
+            _channel.BasicQos(0, 1, false);
+
+            _consumer = new EventingBasicConsumer(_channel);
+            _channel.BasicConsume(queue: ConnectionConstants.QueueName,
+                noAck: false, consumer: _consumer);
+            Console.WriteLine(" [x] Awaiting RPC requests");
+            _consumer.Received += Consumer_Received;
         }
 
         public void ProcessMessages()
         {
-            QueueingBasicConsumer consumer = MakeConsumer();
             WriteStartMessage();
 
             bool done = false;
             while (! done)
             {
-                ProcessAMessage(consumer);
-
-                done = this.WasQuitKeyPressed();
+                Thread.Sleep(1000);
+                Console.Write(".");
+                done = WasQuitKeyPressed();
             }
 
-            connection.Close();
-            connection.Dispose();
-            connection = null;
+            _connection.Close();
+            _connection.Dispose();
+            _connection = null;
+        }
+
+        private void Consumer_Received(object sender, BasicDeliverEventArgs e)
+        {
+            try
+            {
+                RequestMessage request = SerializationHelper.FromByteArray<RequestMessage>(e.Body);
+                if (request != null)
+                {
+                    Console.WriteLine("Received message: {0}", request);
+
+                    ReplyMessage replyMessage = MakeReply(request);
+
+                    IBasicProperties requestProperties = e.BasicProperties;
+                    IBasicProperties responseProperties = _consumer.Model.CreateBasicProperties();
+                    responseProperties.CorrelationId = requestProperties.CorrelationId;
+                    SendReply(requestProperties.ReplyTo, responseProperties, replyMessage);
+                    _channel.BasicAck(e.DeliveryTag, false);
+
+                    Console.WriteLine("sent reply to: {0}", request);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed message: {0}", ex);
+            }
         }
 
         private static void WriteStartMessage()
         {
-            string startMessage = string.Format("Waiting for messages on {0}/{1}. Press 'q' to quit",
-                ConnectionConstants.HostName, ConnectionConstants.QueueName);
+            string startMessage =
+                $"Waiting for messages on {ConnectionConstants.HostName}/{ConnectionConstants.QueueName}. Press 'q' to quit";
             Console.WriteLine(startMessage);
-        }
-
-        private QueueingBasicConsumer MakeConsumer()
-        {
-            QueueingBasicConsumer consumer = new QueueingBasicConsumer(channel);
-            channel.BasicConsume(ConnectionConstants.QueueName, false, consumer);
-            return consumer;
         }
 
         private bool WasQuitKeyPressed()
@@ -62,46 +90,13 @@ namespace Server
             {
                 ConsoleKeyInfo keyInfo = Console.ReadKey();
                 
-                if (Char.ToUpperInvariant(keyInfo.KeyChar) == 'Q')
+                if (char.ToUpperInvariant(keyInfo.KeyChar) == 'Q')
                 {
                     return true;
                 }
             }
 
             return false;
-        }
-
-        private void ProcessAMessage(QueueingBasicConsumer consumer)
-        {
-            BasicDeliverEventArgs messageInEnvelope = DequeueMessage(consumer);
-            if (messageInEnvelope == null)
-            {
-                return;
-            }
-
-            try
-            {
-                object messageObject = SerializationHelper.FromByteArray(messageInEnvelope.Body);
-                RequestMessage request = messageObject as RequestMessage;
-                if (request != null)
-                {
-                    Console.WriteLine("Received message: {0}", request);
-
-                    ReplyMessage replyMessage = this.MakeReply(request);
-
-                    IBasicProperties requestProperties = messageInEnvelope.BasicProperties;
-                    IBasicProperties responseProperties = consumer.Model.CreateBasicProperties();
-                    responseProperties.CorrelationId = requestProperties.CorrelationId;
-                    this.SendReply(requestProperties.ReplyTo, responseProperties, replyMessage);
-                    this.channel.BasicAck(messageInEnvelope.DeliveryTag, false);
- 
-                    Console.WriteLine("sent reply to: {0}", request);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Failed message: {0}", ex);
-            }
         }
 
         private ReplyMessage MakeReply(RequestMessage message)
@@ -115,16 +110,7 @@ namespace Server
 
         private void SendReply(string replyQueueName, IBasicProperties responseProperties, ReplyMessage response)
         {
-            this.channel.BasicPublish(string.Empty, replyQueueName, responseProperties, response.ToByteArray());
-        }
-
-        private static BasicDeliverEventArgs DequeueMessage(QueueingBasicConsumer consumer)
-        {
-            const int timeoutMilseconds = 400;
-            object result;
-
-            consumer.Queue.Dequeue(timeoutMilseconds, out result);
-            return result as BasicDeliverEventArgs;
+            _channel.BasicPublish(string.Empty, replyQueueName, responseProperties, response.ToByteArray());
         }
     }
 }

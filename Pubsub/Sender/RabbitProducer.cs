@@ -13,8 +13,8 @@
     /// </summary>
     class RabbitProducer
     {
-        private IConnection connection;
-        private IModel channel;
+        private IConnection _connection;
+        private IModel _channel;
 
         private const string ExchangeName = "PubSubTestExchange";
 
@@ -25,22 +25,22 @@
                 HostName = ConnectionConstants.HostName
             };
 
-            connection = factory.CreateConnection();
-            channel = connection.CreateModel();
-            channel.ExchangeDeclare(ExchangeName, "fanout");
+            _connection = factory.CreateConnection();
+            _channel = _connection.CreateModel();
+            _channel.ExchangeDeclare(ExchangeName, "fanout");
         }
 
         public void Disconnect()
         {
-            channel = null;
+            _channel = null;
 
-            if (connection.IsOpen)
+            if (_connection.IsOpen)
             {
-                connection.Close();
+                _connection.Close();
             }
 
-            connection.Dispose();
-            connection = null;
+            _connection.Dispose();
+            _connection = null;
         }
 
         private const int MessageCount = 10;
@@ -56,11 +56,11 @@
             {
                 if (random.Next(2) == 1)
                 {
-                    this.SendSimpleMessage(senderId, index);
+                    SendSimpleMessage(senderId, index);
                 }
                 else
                 {
-                    this.SendGuidMessage(senderId, index);
+                    SendGuidMessage(senderId, index);
                 }
 
                 Thread.Sleep(500);
@@ -69,8 +69,8 @@
 
         private static void WriteStartMessage()
         {
-            string startMessage = string.Format("Sending {0} messages to {1}/{2}",
-                MessageCount, ConnectionConstants.HostName, ConnectionConstants.QueueName);
+            string startMessage =
+                $"Sending {MessageCount} messages to {ConnectionConstants.HostName}/{ConnectionConstants.QueueName}";
             Console.WriteLine(startMessage);
         }
 
@@ -79,7 +79,7 @@
             GuidMessage message = new GuidMessage
                 {
                     Identifier = Guid.NewGuid(),
-                    Content = String.Format("This is Guid message #{0} message from {1}", index, senderId)
+                    Content = $"This is Guid message #{index} message from {senderId}"
                 };
 
             SendMessage(message);
@@ -101,7 +101,7 @@
         private void SendMessage<T>(T message)
         {
             byte[] messageBody = message.ToByteArray();
-            channel.BasicPublish(ExchangeName, string.Empty, null, messageBody);
+            _channel.BasicPublish(ExchangeName, string.Empty, null, messageBody);
         }
     }
 }

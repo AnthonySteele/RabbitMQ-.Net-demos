@@ -1,13 +1,10 @@
-﻿using Messages;
-using System.Threading;
-
-namespace Sender
+﻿namespace Sender
 {
     using System;
 
     class Program
     {
-        static int Main(string[] args)
+        static void Main(string[] args)
         {
             RabbitProducer producer = new RabbitProducer();
             producer.Connect();
@@ -15,8 +12,6 @@ namespace Sender
             producer.Disconnect();
 
             Console.WriteLine("All sent.");
-            return 0;
-            //Console.ReadLine();
         }
     }
 }

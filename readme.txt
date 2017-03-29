@@ -1,6 +1,6 @@
 Rabbit MQ .Net Demos
 ====================
-These small C# programs that demonstrate simple use of RabbitMQ in .Net code. I used Visual studio 2010, c# and Nuget. The Nuget package for the .Net RabbitMq client is used in this solution.
+These small C# programs that demonstrate simple use of RabbitMQ in .Net code. I used Visual studio 2017, C# and NuGet. The Nuget package for the .Net RabbitMq client is used in this solution.
 
 The programs assume that you have a RabbitMQ broker installed on localhost. If your broker is elsewhere, you can change the constant for this. 
 
@@ -49,7 +49,7 @@ Notes:
 - There are ways for exchanges to filter messages so that some messages are sent to some queues and not others based on message metadata (the "routing key"), but that is outside the scope of this example.
 
 RPC
-======
+===
 
 This pair of small C# programs demonstrates use of RabbitMQ in a Remote Procedure Call manner, in which a message sender waits for a reply to each message that it sends to a server. This is similar to the Java example at http://www.rabbitmq.com/tutorials/tutorial-six-java.html
 

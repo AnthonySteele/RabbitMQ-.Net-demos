@@ -1,3 +1,5 @@
+using System.Threading;
+
 namespace Receiver
 {
     using System;
@@ -12,12 +14,13 @@ namespace Receiver
     /// </summary>
     internal class RabbitConsumer
     {
-        private IConnection connection;
-        private IModel channel;
+        private IConnection _connection;
+        private IModel _channel;
+        private EventingBasicConsumer _consumer;
 
         private const string ExchangeName = "PubSubTestExchange";
 
-        private string queueName;
+        private string _queueName;
 
         public void Connect()
         {
@@ -26,44 +29,64 @@ namespace Receiver
                 HostName = ConnectionConstants.HostName
             }; 
             
-            connection = factory.CreateConnection();
-            channel = connection.CreateModel();
-            channel.ExchangeDeclare(ExchangeName, "fanout");
+            _connection = factory.CreateConnection();
+            _channel = _connection.CreateModel();
+            _channel.ExchangeDeclare(ExchangeName, "fanout");
 
             // queue name is generated
-            queueName = channel.QueueDeclare();
-            channel.QueueBind(queueName, ExchangeName, string.Empty);
+            _queueName = _channel.QueueDeclare();
+            _channel.QueueBind(_queueName, ExchangeName, string.Empty);
+
+            Console.WriteLine(" [*] Waiting for logs.");
+
+            _consumer = new EventingBasicConsumer(_channel);
+            _consumer.Received += Consumer_Received;
+            _channel.BasicConsume(queue: _queueName,
+                noAck: true,
+                consumer: _consumer);
+        }
+
+        private void Consumer_Received(object sender, BasicDeliverEventArgs e)
+        {
+            try
+            {
+                var message = SerializationHelper.FromByteArray<SimpleMessage>(e.Body);
+                Console.WriteLine("Received {0} : {1}", message.GetType().Name, message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed message: {0}", ex);
+            }
         }
 
         public void ConsumeMessages()
         {
-            QueueingBasicConsumer consumer = MakeConsumer();
             WriteStartMessage();
 
             bool done = false;
             while (! done)
             {
-                ReadAMessage(consumer);
-
-                done = this.WasQuitKeyPressed();
+                Thread.Sleep(1000);
+                Console.Write(".");
+                done = WasQuitKeyPressed();
             }
 
-            connection.Close();
-            connection.Dispose();
-            connection = null;
+            _connection.Close();
+            _connection.Dispose();
+            _connection = null;
         }
 
         private static void WriteStartMessage()
         {
-            string startMessage = string.Format("Waiting for messages on {0}/{1}. Press 'q' to quit",
-                ConnectionConstants.HostName, ConnectionConstants.QueueName);
+            string startMessage =
+                $"Waiting for messages on {ConnectionConstants.HostName}/{ConnectionConstants.QueueName}. Press 'q' to quit";
             Console.WriteLine(startMessage);
         }
 
-        private QueueingBasicConsumer MakeConsumer()
+        private EventingBasicConsumer MakeConsumer()
         {
-            QueueingBasicConsumer consumer = new QueueingBasicConsumer(channel);
-            channel.BasicConsume(queueName, true, consumer);
+            EventingBasicConsumer consumer = new EventingBasicConsumer(_channel);
+            _channel.BasicConsume(_queueName, true, consumer);
             return consumer;
         }
 
@@ -80,34 +103,6 @@ namespace Receiver
             }
 
             return false;
-        }
-
-        private static void ReadAMessage(QueueingBasicConsumer consumer)
-        {
-            BasicDeliverEventArgs delivery = DequeueMessage(consumer);
-            if (delivery == null)
-            {
-                return;
-            }
-
-            try
-            {
-                object message = SerializationHelper.FromByteArray(delivery.Body);
-                Console.WriteLine("Received {0} : {1}", message.GetType().Name, message);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Failed message: {0}", ex);
-            }
-        }
-
-        private static BasicDeliverEventArgs DequeueMessage(QueueingBasicConsumer consumer)
-        {
-            const int timeoutMilseconds = 400;
-            object result;
-
-            consumer.Queue.Dequeue(timeoutMilseconds, out result);
-            return result as BasicDeliverEventArgs;
         }
     }
 }

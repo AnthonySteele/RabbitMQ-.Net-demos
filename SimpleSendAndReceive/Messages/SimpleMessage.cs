@@ -1,7 +1,7 @@
-﻿namespace Messages
+﻿using System;
+
+namespace Messages
 {
-    using System;
-    
     [Serializable]
     public class SimpleMessage
     {
@@ -10,7 +10,7 @@
 
         public override string ToString()
         {
-            return string.Format("Id: {0} Text: '{1}'", Id, Text);
+            return $"Id: {Id} Text: '{Text}'";
         }
     }
 }
