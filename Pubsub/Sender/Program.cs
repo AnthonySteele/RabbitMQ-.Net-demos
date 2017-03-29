@@ -1,7 +1,4 @@
-﻿using Messages;
-using System.Threading;
-
-namespace Sender
+﻿namespace Sender
 {
     using System;
 
@@ -16,7 +13,6 @@ namespace Sender
 
             Console.WriteLine("All sent.");
             return 0;
-            //Console.ReadLine();
         }
     }
 }

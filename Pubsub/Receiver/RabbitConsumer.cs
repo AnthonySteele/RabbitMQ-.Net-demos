@@ -1,3 +1,5 @@
+using System.Threading;
+
 namespace Receiver
 {
     using System;
@@ -14,6 +16,7 @@ namespace Receiver
     {
         private IConnection _connection;
         private IModel _channel;
+        private EventingBasicConsumer _consumer;
 
         private const string ExchangeName = "PubSubTestExchange";
 
@@ -33,18 +36,38 @@ namespace Receiver
             // queue name is generated
             _queueName = _channel.QueueDeclare();
             _channel.QueueBind(_queueName, ExchangeName, string.Empty);
+
+            Console.WriteLine(" [*] Waiting for logs.");
+
+            _consumer = new EventingBasicConsumer(_channel);
+            _consumer.Received += Consumer_Received;
+            _channel.BasicConsume(queue: _queueName,
+                noAck: true,
+                consumer: _consumer);
+        }
+
+        private void Consumer_Received(object sender, BasicDeliverEventArgs e)
+        {
+            try
+            {
+                object message = SerializationHelper.FromByteArray(e.Body);
+                Console.WriteLine("Received {0} : {1}", message.GetType().Name, message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed message: {0}", ex);
+            }
         }
 
         public void ConsumeMessages()
         {
-            QueueingBasicConsumer consumer = MakeConsumer();
             WriteStartMessage();
 
             bool done = false;
             while (! done)
             {
-                ReadAMessage(consumer);
-
+                Thread.Sleep(1000);
+                Console.Write(".");
                 done = WasQuitKeyPressed();
             }
 
@@ -60,9 +83,9 @@ namespace Receiver
             Console.WriteLine(startMessage);
         }
 
-        private QueueingBasicConsumer MakeConsumer()
+        private EventingBasicConsumer MakeConsumer()
         {
-            QueueingBasicConsumer consumer = new QueueingBasicConsumer(_channel);
+            EventingBasicConsumer consumer = new EventingBasicConsumer(_channel);
             _channel.BasicConsume(_queueName, true, consumer);
             return consumer;
         }
@@ -80,34 +103,6 @@ namespace Receiver
             }
 
             return false;
-        }
-
-        private static void ReadAMessage(QueueingBasicConsumer consumer)
-        {
-            BasicDeliverEventArgs delivery = DequeueMessage(consumer);
-            if (delivery == null)
-            {
-                return;
-            }
-
-            try
-            {
-                object message = SerializationHelper.FromByteArray(delivery.Body);
-                Console.WriteLine("Received {0} : {1}", message.GetType().Name, message);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Failed message: {0}", ex);
-            }
-        }
-
-        private static BasicDeliverEventArgs DequeueMessage(QueueingBasicConsumer consumer)
-        {
-            const int timeoutMilseconds = 400;
-            object result;
-
-            consumer.Queue.Dequeue(timeoutMilseconds, out result);
-            return result as BasicDeliverEventArgs;
         }
     }
 }
