@@ -12,12 +12,12 @@ namespace Receiver
     /// </summary>
     internal class RabbitConsumer
     {
-        private IConnection connection;
-        private IModel channel;
+        private IConnection _connection;
+        private IModel _channel;
 
         private const string ExchangeName = "PubSubTestExchange";
 
-        private string queueName;
+        private string _queueName;
 
         public void Connect()
         {
@@ -26,13 +26,13 @@ namespace Receiver
                 HostName = ConnectionConstants.HostName
             }; 
             
-            connection = factory.CreateConnection();
-            channel = connection.CreateModel();
-            channel.ExchangeDeclare(ExchangeName, "fanout");
+            _connection = factory.CreateConnection();
+            _channel = _connection.CreateModel();
+            _channel.ExchangeDeclare(ExchangeName, "fanout");
 
             // queue name is generated
-            queueName = channel.QueueDeclare();
-            channel.QueueBind(queueName, ExchangeName, string.Empty);
+            _queueName = _channel.QueueDeclare();
+            _channel.QueueBind(_queueName, ExchangeName, string.Empty);
         }
 
         public void ConsumeMessages()
@@ -45,25 +45,25 @@ namespace Receiver
             {
                 ReadAMessage(consumer);
 
-                done = this.WasQuitKeyPressed();
+                done = WasQuitKeyPressed();
             }
 
-            connection.Close();
-            connection.Dispose();
-            connection = null;
+            _connection.Close();
+            _connection.Dispose();
+            _connection = null;
         }
 
         private static void WriteStartMessage()
         {
-            string startMessage = string.Format("Waiting for messages on {0}/{1}. Press 'q' to quit",
-                ConnectionConstants.HostName, ConnectionConstants.QueueName);
+            string startMessage =
+                $"Waiting for messages on {ConnectionConstants.HostName}/{ConnectionConstants.QueueName}. Press 'q' to quit";
             Console.WriteLine(startMessage);
         }
 
         private QueueingBasicConsumer MakeConsumer()
         {
-            QueueingBasicConsumer consumer = new QueueingBasicConsumer(channel);
-            channel.BasicConsume(queueName, true, consumer);
+            QueueingBasicConsumer consumer = new QueueingBasicConsumer(_channel);
+            _channel.BasicConsume(_queueName, true, consumer);
             return consumer;
         }
 

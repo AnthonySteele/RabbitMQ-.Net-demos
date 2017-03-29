@@ -10,7 +10,7 @@
 
         public override string ToString()
         {
-            return string.Format("Id: {0} Content: '{1}'", Identifier, Content);
+            return $"Id: {Identifier} Content: '{Content}'";
         }
     }
 }
