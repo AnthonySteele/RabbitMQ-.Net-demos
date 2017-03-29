@@ -8,8 +8,8 @@ namespace Server
 
     internal class QueuedServer
     {
-        private IConnection connection;
-        private IModel channel;
+        private IConnection _connection;
+        private IModel _channel;
 
         public void Connect()
         {
@@ -18,10 +18,10 @@ namespace Server
                 HostName = ConnectionConstants.HostName
             }; 
             
-            connection = factory.CreateConnection();
-            channel = connection.CreateModel();
+            _connection = factory.CreateConnection();
+            _channel = _connection.CreateModel();
 
-            channel.QueueDeclare(ConnectionConstants.QueueName, false, false, false, null);
+            _channel.QueueDeclare(ConnectionConstants.QueueName, false, false, false, null);
         }
 
         public void ProcessMessages()
@@ -34,25 +34,25 @@ namespace Server
             {
                 ProcessAMessage(consumer);
 
-                done = this.WasQuitKeyPressed();
+                done = WasQuitKeyPressed();
             }
 
-            connection.Close();
-            connection.Dispose();
-            connection = null;
+            _connection.Close();
+            _connection.Dispose();
+            _connection = null;
         }
 
         private static void WriteStartMessage()
         {
-            string startMessage = string.Format("Waiting for messages on {0}/{1}. Press 'q' to quit",
-                ConnectionConstants.HostName, ConnectionConstants.QueueName);
+            string startMessage =
+                $"Waiting for messages on {ConnectionConstants.HostName}/{ConnectionConstants.QueueName}. Press 'q' to quit";
             Console.WriteLine(startMessage);
         }
 
         private QueueingBasicConsumer MakeConsumer()
         {
-            QueueingBasicConsumer consumer = new QueueingBasicConsumer(channel);
-            channel.BasicConsume(ConnectionConstants.QueueName, false, consumer);
+            QueueingBasicConsumer consumer = new QueueingBasicConsumer(_channel);
+            _channel.BasicConsume(ConnectionConstants.QueueName, false, consumer);
             return consumer;
         }
 
@@ -87,13 +87,13 @@ namespace Server
                 {
                     Console.WriteLine("Received message: {0}", request);
 
-                    ReplyMessage replyMessage = this.MakeReply(request);
+                    ReplyMessage replyMessage = MakeReply(request);
 
                     IBasicProperties requestProperties = messageInEnvelope.BasicProperties;
                     IBasicProperties responseProperties = consumer.Model.CreateBasicProperties();
                     responseProperties.CorrelationId = requestProperties.CorrelationId;
-                    this.SendReply(requestProperties.ReplyTo, responseProperties, replyMessage);
-                    this.channel.BasicAck(messageInEnvelope.DeliveryTag, false);
+                    SendReply(requestProperties.ReplyTo, responseProperties, replyMessage);
+                    _channel.BasicAck(messageInEnvelope.DeliveryTag, false);
  
                     Console.WriteLine("sent reply to: {0}", request);
                 }
@@ -115,7 +115,7 @@ namespace Server
 
         private void SendReply(string replyQueueName, IBasicProperties responseProperties, ReplyMessage response)
         {
-            this.channel.BasicPublish(string.Empty, replyQueueName, responseProperties, response.ToByteArray());
+            _channel.BasicPublish(string.Empty, replyQueueName, responseProperties, response.ToByteArray());
         }
 
         private static BasicDeliverEventArgs DequeueMessage(QueueingBasicConsumer consumer)

@@ -10,7 +10,7 @@
 
         public override string ToString()
         {
-            return string.Format("Id: {0} Reply: '{1}'", Id, this.Reply);
+            return $"Id: {Id} Reply: '{Reply}'";
         }
     }
 }

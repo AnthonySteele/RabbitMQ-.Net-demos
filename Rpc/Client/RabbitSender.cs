@@ -10,10 +10,10 @@ namespace Client
 
     class RabbitSender
     {
-        private IConnection connection;
-        private IModel channel;
-        private string replyQueueName;
-        private QueueingBasicConsumer replyConsumer;
+        private IConnection _connection;
+        private IModel _channel;
+        private string _replyQueueName;
+        private QueueingBasicConsumer _replyConsumer;
 
         public void Connect()
         {
@@ -22,32 +22,32 @@ namespace Client
                 HostName = ConnectionConstants.HostName
             };
 
-            connection = factory.CreateConnection();
-            channel = connection.CreateModel();
+            _connection = factory.CreateConnection();
+            _channel = _connection.CreateModel();
 
-            channel.QueueDeclare(ConnectionConstants.QueueName, false, false, false, null);
+            _channel.QueueDeclare(ConnectionConstants.QueueName, false, false, false, null);
             MakeReplyConsumer();
         }
 
         public void Disconnect()
         {
-            channel = null;
+            _channel = null;
 
-            if (connection.IsOpen)
+            if (_connection.IsOpen)
             {
-                connection.Close();
+                _connection.Close();
             }
 
-            connection.Dispose();
-            connection = null;
+            _connection.Dispose();
+            _connection = null;
         }
 
         private void MakeReplyConsumer()
         {
-            replyQueueName = this.channel.QueueDeclare();
+            _replyQueueName = _channel.QueueDeclare();
 
-            replyConsumer = new QueueingBasicConsumer(this.channel);
-            this.channel.BasicConsume(replyQueueName, true, replyConsumer);
+            _replyConsumer = new QueueingBasicConsumer(_channel);
+            _channel.BasicConsume(_replyQueueName, true, _replyConsumer);
         }
 
         private const int MessageCount = 10;
@@ -58,15 +58,15 @@ namespace Client
 
             for (int index = 1; index <= MessageCount; index++)
             {
-                this.SendRequest(index);
+                SendRequest(index);
                 Thread.Sleep(500);
             }
         }
 
         private static void WriteStartMessage()
         {
-            string startMessage = string.Format("Sending {0} messages to {1}/{2}",
-                MessageCount, ConnectionConstants.HostName, ConnectionConstants.QueueName);
+            string startMessage =
+                $"Sending {MessageCount} messages to {ConnectionConstants.HostName}/{ConnectionConstants.QueueName}";
             Console.WriteLine(startMessage);
         }
 
@@ -76,16 +76,16 @@ namespace Client
             RequestMessage message = new RequestMessage
             {
                 Id = index,
-                Request = string.Format("This is request {0}", index)
+                Request = $"This is request {index}"
             };
 
             byte[] messageBody = message.ToByteArray();
 
-            IBasicProperties requestProperties = channel.CreateBasicProperties();
+            IBasicProperties requestProperties = _channel.CreateBasicProperties();
             requestProperties.CorrelationId = Guid.NewGuid().ToString();
-            requestProperties.ReplyTo = replyQueueName;
+            requestProperties.ReplyTo = _replyQueueName;
 
-            this.channel.BasicPublish(string.Empty, ConnectionConstants.QueueName, requestProperties, messageBody);
+            _channel.BasicPublish(string.Empty, ConnectionConstants.QueueName, requestProperties, messageBody);
             Console.WriteLine("Sent message #{0}", index);
             ReadReply();
         }
@@ -93,7 +93,7 @@ namespace Client
         private void ReadReply()
         {
             // this blocks
-            BasicDeliverEventArgs replyInEnvelope = replyConsumer.Queue.Dequeue() as BasicDeliverEventArgs;
+            BasicDeliverEventArgs replyInEnvelope = _replyConsumer.Queue.Dequeue() as BasicDeliverEventArgs;
             if (replyInEnvelope != null)
             {
                 object responseObject = SerializationHelper.FromByteArray(replyInEnvelope.Body);
