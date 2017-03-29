@@ -1,3 +1,5 @@
+using System.Threading;
+
 namespace Server
 {
     using System;
@@ -10,6 +12,7 @@ namespace Server
     {
         private IConnection _connection;
         private IModel _channel;
+        private EventingBasicConsumer _consumer;
 
         public void Connect()
         {
@@ -22,24 +25,59 @@ namespace Server
             _channel = _connection.CreateModel();
 
             _channel.QueueDeclare(ConnectionConstants.QueueName, false, false, false, null);
+            _channel.BasicQos(0, 1, false);
+
+            _consumer = new EventingBasicConsumer(_channel);
+            _channel.BasicConsume(queue: ConnectionConstants.QueueName,
+                noAck: false, consumer: _consumer);
+            Console.WriteLine(" [x] Awaiting RPC requests");
+            _consumer.Received += Consumer_Received;
         }
 
         public void ProcessMessages()
         {
-            QueueingBasicConsumer consumer = MakeConsumer();
+            EventingBasicConsumer consumer = MakeConsumer();
+            consumer.Received += Consumer_Received;
             WriteStartMessage();
 
             bool done = false;
             while (! done)
             {
-                ProcessAMessage(consumer);
-
+                Thread.Sleep(1000);
+                Console.Write(".");
                 done = WasQuitKeyPressed();
             }
 
             _connection.Close();
             _connection.Dispose();
             _connection = null;
+        }
+
+        private void Consumer_Received(object sender, BasicDeliverEventArgs e)
+        {
+            try
+            {
+                object messageObject = SerializationHelper.FromByteArray(e.Body);
+                RequestMessage request = messageObject as RequestMessage;
+                if (request != null)
+                {
+                    Console.WriteLine("Received message: {0}", request);
+
+                    ReplyMessage replyMessage = MakeReply(request);
+
+                    IBasicProperties requestProperties = e.BasicProperties;
+                    IBasicProperties responseProperties = _consumer.Model.CreateBasicProperties();
+                    responseProperties.CorrelationId = requestProperties.CorrelationId;
+                    SendReply(requestProperties.ReplyTo, responseProperties, replyMessage);
+                    _channel.BasicAck(e.DeliveryTag, false);
+
+                    Console.WriteLine("sent reply to: {0}", request);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed message: {0}", ex);
+            }
         }
 
         private static void WriteStartMessage()
@@ -49,9 +87,9 @@ namespace Server
             Console.WriteLine(startMessage);
         }
 
-        private QueueingBasicConsumer MakeConsumer()
+        private EventingBasicConsumer MakeConsumer()
         {
-            QueueingBasicConsumer consumer = new QueueingBasicConsumer(_channel);
+            EventingBasicConsumer consumer = new EventingBasicConsumer(_channel);
             _channel.BasicConsume(ConnectionConstants.QueueName, false, consumer);
             return consumer;
         }
@@ -62,46 +100,13 @@ namespace Server
             {
                 ConsoleKeyInfo keyInfo = Console.ReadKey();
                 
-                if (Char.ToUpperInvariant(keyInfo.KeyChar) == 'Q')
+                if (char.ToUpperInvariant(keyInfo.KeyChar) == 'Q')
                 {
                     return true;
                 }
             }
 
             return false;
-        }
-
-        private void ProcessAMessage(QueueingBasicConsumer consumer)
-        {
-            BasicDeliverEventArgs messageInEnvelope = DequeueMessage(consumer);
-            if (messageInEnvelope == null)
-            {
-                return;
-            }
-
-            try
-            {
-                object messageObject = SerializationHelper.FromByteArray(messageInEnvelope.Body);
-                RequestMessage request = messageObject as RequestMessage;
-                if (request != null)
-                {
-                    Console.WriteLine("Received message: {0}", request);
-
-                    ReplyMessage replyMessage = MakeReply(request);
-
-                    IBasicProperties requestProperties = messageInEnvelope.BasicProperties;
-                    IBasicProperties responseProperties = consumer.Model.CreateBasicProperties();
-                    responseProperties.CorrelationId = requestProperties.CorrelationId;
-                    SendReply(requestProperties.ReplyTo, responseProperties, replyMessage);
-                    _channel.BasicAck(messageInEnvelope.DeliveryTag, false);
- 
-                    Console.WriteLine("sent reply to: {0}", request);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Failed message: {0}", ex);
-            }
         }
 
         private ReplyMessage MakeReply(RequestMessage message)
@@ -116,15 +121,6 @@ namespace Server
         private void SendReply(string replyQueueName, IBasicProperties responseProperties, ReplyMessage response)
         {
             _channel.BasicPublish(string.Empty, replyQueueName, responseProperties, response.ToByteArray());
-        }
-
-        private static BasicDeliverEventArgs DequeueMessage(QueueingBasicConsumer consumer)
-        {
-            const int timeoutMilseconds = 400;
-            object result;
-
-            consumer.Queue.Dequeue(timeoutMilseconds, out result);
-            return result as BasicDeliverEventArgs;
         }
     }
 }

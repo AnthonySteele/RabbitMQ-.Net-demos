@@ -13,7 +13,7 @@ namespace Client
         private IConnection _connection;
         private IModel _channel;
         private string _replyQueueName;
-        private QueueingBasicConsumer _replyConsumer;
+        private EventingBasicConsumer _replyConsumer;
 
         public void Connect()
         {
@@ -46,8 +46,9 @@ namespace Client
         {
             _replyQueueName = _channel.QueueDeclare();
 
-            _replyConsumer = new QueueingBasicConsumer(_channel);
+            _replyConsumer = new EventingBasicConsumer(_channel);
             _channel.BasicConsume(_replyQueueName, true, _replyConsumer);
+            _replyConsumer.Received += _replyConsumer_Received;
         }
 
         private const int MessageCount = 10;
@@ -70,7 +71,6 @@ namespace Client
             Console.WriteLine(startMessage);
         }
 
-
         private void SendRequest(int index)
         {
             RequestMessage message = new RequestMessage
@@ -87,21 +87,15 @@ namespace Client
 
             _channel.BasicPublish(string.Empty, ConnectionConstants.QueueName, requestProperties, messageBody);
             Console.WriteLine("Sent message #{0}", index);
-            ReadReply();
         }
 
-        private void ReadReply()
+        private void _replyConsumer_Received(object sender, BasicDeliverEventArgs e)
         {
-            // this blocks
-            BasicDeliverEventArgs replyInEnvelope = _replyConsumer.Queue.Dequeue() as BasicDeliverEventArgs;
-            if (replyInEnvelope != null)
+            object responseObject = SerializationHelper.FromByteArray(e.Body);
+            ReplyMessage responseMessage = responseObject as ReplyMessage;
+            if (responseMessage != null)
             {
-                object responseObject = SerializationHelper.FromByteArray(replyInEnvelope.Body);
-                ReplyMessage responseMessage = responseObject as ReplyMessage;
-                if (responseMessage != null)
-                {
-                    Console.WriteLine("Response: {0}", responseMessage); 
-                }
+                Console.WriteLine("Response: {0}", responseMessage);
             }
         }
     }
