@@ -1,6 +1,6 @@
 Rabbit MQ .Net Demos
 ====================
-These small C# programs that demonstrate simple use of RabbitMQ in .Net code. I used Visual studio 2010, c# and Nuget. The Nuget package for the .Net RabbitMq client is used in this solution.
+These small C# programs that demonstrate simple use of RabbitMQ in .Net code. I used Visual studio 2017, C# and NuGet. The Nuget package for the .Net RabbitMq client is used in this solution.
 
 The programs assume that you have a RabbitMQ broker installed on localhost. If your broker is elsewhere, you can change the constant for this. 
 
