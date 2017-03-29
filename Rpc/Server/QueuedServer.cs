@@ -36,8 +36,6 @@ namespace Server
 
         public void ProcessMessages()
         {
-            EventingBasicConsumer consumer = MakeConsumer();
-            consumer.Received += Consumer_Received;
             WriteStartMessage();
 
             bool done = false;
@@ -84,13 +82,6 @@ namespace Server
             string startMessage =
                 $"Waiting for messages on {ConnectionConstants.HostName}/{ConnectionConstants.QueueName}. Press 'q' to quit";
             Console.WriteLine(startMessage);
-        }
-
-        private EventingBasicConsumer MakeConsumer()
-        {
-            EventingBasicConsumer consumer = new EventingBasicConsumer(_channel);
-            _channel.BasicConsume(ConnectionConstants.QueueName, false, consumer);
-            return consumer;
         }
 
         private bool WasQuitKeyPressed()
