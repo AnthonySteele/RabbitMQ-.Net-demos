@@ -4,7 +4,7 @@
 
     class Program
     {
-        static int Main(string[] args)
+        static void Main(string[] args)
         {
             RabbitProducer producer = new RabbitProducer();
             producer.Connect();
@@ -12,7 +12,6 @@
             producer.Disconnect();
 
             Console.WriteLine("All sent.");
-            return 0;
         }
     }
 }

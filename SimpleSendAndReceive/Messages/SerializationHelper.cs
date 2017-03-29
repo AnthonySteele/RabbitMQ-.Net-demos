@@ -11,7 +11,7 @@ namespace Messages
             return Encoding.UTF8.GetBytes(objectstr);
         }
 
-        public static object FromByteArray<T>(byte[] data)
+        public static T FromByteArray<T>(byte[] data)
         {
             var bodystr = Encoding.UTF8.GetString(data);
             return JsonConvert.DeserializeObject<T>(bodystr);

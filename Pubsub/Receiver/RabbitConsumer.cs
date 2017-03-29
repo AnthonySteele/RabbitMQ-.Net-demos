@@ -50,7 +50,7 @@ namespace Receiver
         {
             try
             {
-                object message = SerializationHelper.FromByteArray(e.Body);
+                var message = SerializationHelper.FromByteArray<SimpleMessage>(e.Body);
                 Console.WriteLine("Received {0} : {1}", message.GetType().Name, message);
             }
             catch (Exception ex)

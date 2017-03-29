@@ -91,8 +91,7 @@ namespace Client
 
         private void _replyConsumer_Received(object sender, BasicDeliverEventArgs e)
         {
-            object responseObject = SerializationHelper.FromByteArray(e.Body);
-            ReplyMessage responseMessage = responseObject as ReplyMessage;
+            ReplyMessage responseMessage = SerializationHelper.FromByteArray<ReplyMessage>(e.Body);
             if (responseMessage != null)
             {
                 Console.WriteLine("Response: {0}", responseMessage);

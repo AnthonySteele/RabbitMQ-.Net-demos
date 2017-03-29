@@ -57,8 +57,7 @@ namespace Server
         {
             try
             {
-                object messageObject = SerializationHelper.FromByteArray(e.Body);
-                RequestMessage request = messageObject as RequestMessage;
+                RequestMessage request = SerializationHelper.FromByteArray<RequestMessage>(e.Body);
                 if (request != null)
                 {
                     Console.WriteLine("Received message: {0}", request);
