@@ -13,7 +13,6 @@
 
             Console.WriteLine("All sent.");
             return 0;
-            //Console.ReadLine();
         }
     }
 }

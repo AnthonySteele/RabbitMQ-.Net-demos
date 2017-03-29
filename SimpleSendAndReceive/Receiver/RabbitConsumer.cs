@@ -1,3 +1,5 @@
+using System.Threading;
+
 namespace Receiver
 {
     using System;
@@ -8,8 +10,9 @@ namespace Receiver
 
     internal class RabbitConsumer
     {
-        private IConnection connection;
-        private IModel channel;
+        private IConnection _connection;
+        private IModel _channel;
+        private EventingBasicConsumer _consumer;
 
         public void Connect()
         {
@@ -18,71 +21,20 @@ namespace Receiver
                 HostName = ConnectionConstants.HostName
             }; 
             
-            connection = factory.CreateConnection();
-            channel = connection.CreateModel();
+            _connection = factory.CreateConnection();
+            _channel = _connection.CreateModel();
 
-            channel.QueueDeclare(ConnectionConstants.QueueName, false, false, false, null);
+            _channel.QueueDeclare(ConnectionConstants.QueueName, false, false, false, null);
+            _consumer = new EventingBasicConsumer(_channel);
+            _consumer.Received += _consumer_Received;
+            _channel.BasicConsume(queue: ConnectionConstants.QueueName, noAck: true, consumer: _consumer);
         }
 
-        public void ConsumeMessages()
+        private void _consumer_Received(object sender, BasicDeliverEventArgs e)
         {
-            QueueingBasicConsumer consumer = MakeConsumer();
-            WriteStartMessage();
-
-            bool done = false;
-            while (! done)
-            {
-                ReadAMessage(consumer);
-
-                done = this.WasQuitKeyPressed();
-            }
-
-            connection.Close();
-            connection.Dispose();
-            connection = null;
-        }
-
-        private static void WriteStartMessage()
-        {
-            string startMessage = string.Format("Waiting for messages on {0}/{1}. Press 'q' to quit",
-                ConnectionConstants.HostName, ConnectionConstants.QueueName);
-            Console.WriteLine(startMessage);
-        }
-
-
-        private QueueingBasicConsumer MakeConsumer()
-        {
-            QueueingBasicConsumer consumer = new QueueingBasicConsumer(channel);
-            channel.BasicConsume(ConnectionConstants.QueueName, true, consumer);
-            return consumer;
-        }
-
-        private bool WasQuitKeyPressed()
-        {
-            if (Console.KeyAvailable)
-            {
-                ConsoleKeyInfo keyInfo = Console.ReadKey();
-                
-                if (Char.ToUpperInvariant(keyInfo.KeyChar) == 'Q')
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static void ReadAMessage(QueueingBasicConsumer consumer)
-        {
-            BasicDeliverEventArgs messageInEnvelope = DequeueMessage(consumer);
-            if (messageInEnvelope == null)
-            {
-                return;
-            }
-
             try
             {
-                object message = SerializationHelper.FromByteArray(messageInEnvelope.Body);
+                object message = SerializationHelper.FromByteArray(e.Body);
                 Console.WriteLine("Received {0} : {1}", message.GetType().Name, message);
             }
             catch (Exception ex)
@@ -91,13 +43,43 @@ namespace Receiver
             }
         }
 
-        private static BasicDeliverEventArgs DequeueMessage(QueueingBasicConsumer consumer)
+        public void ConsumeMessages()
         {
-            const int timeoutMilseconds = 400;
-            object result;
+            WriteStartMessage();
 
-            consumer.Queue.Dequeue(timeoutMilseconds, out result);
-            return result as BasicDeliverEventArgs;
+            bool done = false;
+            while (! done)
+            {
+                Thread.Sleep(1000);
+                Console.Write(".");
+                done = WasQuitKeyPressed();
+            }
+
+            _connection.Close();
+            _connection.Dispose();
+            _connection = null;
+        }
+
+        private static void WriteStartMessage()
+        {
+            string startMessage =
+                $"Waiting for messages on {ConnectionConstants.HostName}/{ConnectionConstants.QueueName}. Press 'q' to quit";
+            Console.WriteLine(startMessage);
+        }
+
+        private bool WasQuitKeyPressed()
+        {
+            if (Console.KeyAvailable)
+            {
+                ConsoleKeyInfo keyInfo = Console.ReadKey();
+                
+                if (char.ToUpperInvariant(keyInfo.KeyChar) == 'Q')
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
